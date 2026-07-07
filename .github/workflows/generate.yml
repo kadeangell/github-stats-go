@@ -1,0 +1,47 @@
+name: Generate Stats Images
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "5 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Test
+        run: go test ./...
+
+      # If this step fails, nothing is committed — yesterday's good images
+      # stay published instead of being overwritten with bad data.
+      - name: Generate images
+        run: go run .
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          GITHUB_ACTOR: ${{ github.repository_owner }}
+          EXCLUDED: ${{ secrets.EXCLUDED }}
+          EXCLUDED_LANGS: ${{ secrets.EXCLUDED_LANGS }}
+          EXCLUDE_FORKED_REPOS: true
+
+      - name: Commit generated images
+        run: |
+          if [ -z "$(git status --porcelain generated)" ]; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-stats[bot]"
+          git config user.email "github-stats[bot]@users.noreply.github.com"
+          git add generated
+          git commit -m "chore: update generated images"
+          git push
