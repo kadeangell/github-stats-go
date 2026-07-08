@@ -66,8 +66,8 @@ func TestRenderLanguagesCapsList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderLanguages: %v", err)
 	}
-	if got := strings.Count(out, "<li"); got != 8 {
-		t.Errorf("listed %d languages, want 8", got)
+	if got := strings.Count(out, "<li"); got != 12 {
+		t.Errorf("listed %d languages, want 12", got)
 	}
 	// The progress bar still shows every language.
 	if got := strings.Count(out, `class="progress-item"`); got != 30 {
