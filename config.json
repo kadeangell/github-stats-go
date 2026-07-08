@@ -1,5 +1,10 @@
 {
-  "excludeRepos": [],
+  "excludeRepos": [
+    "kadeangell/github-stats",
+    "kadeangell/pokemontgom",
+    "kadeangell/tanstack-hotkeys",
+    "kadeangell/react-email"
+  ],
   "excludeLangs": [],
   "excludeForks": true
 }
