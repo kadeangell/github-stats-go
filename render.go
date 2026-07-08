@@ -32,7 +32,7 @@ func RenderLanguages(templateDir string, s *Stats) (string, error) {
 		return "", err
 	}
 
-	// ponytail: the SVG box is a fixed 360x235 — roughly 12 list items fit.
+	// ponytail: the SVG box is a fixed 360x220 — roughly 12 list items fit.
 	// The progress bar still shows every language's proportion.
 	const maxLangsListed = 12
 	const delayBetween = 150
