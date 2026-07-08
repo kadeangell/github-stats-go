@@ -23,13 +23,21 @@ The Python original silently swallowed API errors and committed the resulting ba
 
 1. Create a repo from this code; add an `ACCESS_TOKEN` secret (classic PAT with `repo` scope,
    needed for traffic/views data).
-2. Optional secrets: `EXCLUDED` (comma-separated `owner/repo` to skip), `EXCLUDED_LANGS`
-   (comma-separated language names).
+2. Optionally edit `config.json` to exclude repos or languages (this file is public):
+
+```json
+{
+  "excludeRepos": ["owner/repo"],
+  "excludeLangs": ["html"],
+  "excludeForks": true
+}
+```
+
 3. The workflow (`.github/workflows/generate.yml`) runs daily and on push; embed the images:
 
 ```markdown
-![](https://raw.githubusercontent.com/<user>/<repo>/master/generated/overview.svg#gh-dark-mode-only)
-![](https://raw.githubusercontent.com/<user>/<repo>/master/generated/languages.svg#gh-dark-mode-only)
+![](https://raw.githubusercontent.com/<user>/<repo>/main/generated/overview.svg#gh-dark-mode-only)
+![](https://raw.githubusercontent.com/<user>/<repo>/main/generated/languages.svg#gh-dark-mode-only)
 ```
 
 (The `#gh-dark-mode-only` fragment triggers the dark theme baked into the SVGs.)

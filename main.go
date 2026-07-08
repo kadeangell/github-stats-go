@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -22,11 +23,15 @@ func run() error {
 	if token == "" || user == "" {
 		return errors.New("ACCESS_TOKEN and GITHUB_ACTOR environment variables must be set")
 	}
+	fc, err := loadConfig("config.json")
+	if err != nil {
+		return err
+	}
 	cfg := Config{
 		Username:     user,
-		ExcludeRepos: csvSet(os.Getenv("EXCLUDED"), false),
-		ExcludeLangs: csvSet(os.Getenv("EXCLUDED_LANGS"), true),
-		ExcludeForks: isTruthy(os.Getenv("EXCLUDE_FORKED_REPOS")),
+		ExcludeRepos: toSet(fc.ExcludeRepos, false),
+		ExcludeLangs: toSet(fc.ExcludeLangs, true),
+		ExcludeForks: fc.ExcludeForks,
 	}
 
 	stats, err := FetchStats(NewClient(token), cfg)
@@ -58,9 +63,32 @@ func run() error {
 	return os.WriteFile("generated/languages.svg", []byte(languages), 0o644)
 }
 
-func csvSet(csv string, lowercase bool) map[string]bool {
+// fileConfig is the public, in-repo config (config.json). It intentionally
+// holds nothing secret — repos/langs to exclude are visible to anyone.
+type fileConfig struct {
+	ExcludeRepos []string `json:"excludeRepos"` // "owner/name"
+	ExcludeLangs []string `json:"excludeLangs"` // case-insensitive
+	ExcludeForks bool     `json:"excludeForks"`
+}
+
+func loadConfig(path string) (fileConfig, error) {
+	var fc fileConfig
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return fc, nil // no config file is fine: nothing excluded
+	}
+	if err != nil {
+		return fc, err
+	}
+	if err := json.Unmarshal(data, &fc); err != nil {
+		return fc, fmt.Errorf("parsing %s: %w", path, err)
+	}
+	return fc, nil
+}
+
+func toSet(items []string, lowercase bool) map[string]bool {
 	set := map[string]bool{}
-	for _, item := range strings.Split(csv, ",") {
+	for _, item := range items {
 		item = strings.TrimSpace(item)
 		if lowercase {
 			item = strings.ToLower(item)
@@ -70,9 +98,4 @@ func csvSet(csv string, lowercase bool) map[string]bool {
 		}
 	}
 	return set
-}
-
-func isTruthy(s string) bool {
-	s = strings.TrimSpace(strings.ToLower(s))
-	return s != "" && s != "false"
 }

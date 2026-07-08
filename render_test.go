@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -49,6 +51,59 @@ func TestRenderLanguages(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q", want)
 		}
+	}
+}
+
+func TestRenderLanguagesCapsList(t *testing.T) {
+	s := fixtureStats()
+	s.Languages = nil
+	for i := range 30 {
+		s.Languages = append(s.Languages, Language{
+			Name: fmt.Sprintf("Lang%02d", i), Color: "#123456", Prop: 100.0 / 30,
+		})
+	}
+	out, err := RenderLanguages("templates", s)
+	if err != nil {
+		t.Fatalf("RenderLanguages: %v", err)
+	}
+	if got := strings.Count(out, "<li"); got != 8 {
+		t.Errorf("listed %d languages, want 8", got)
+	}
+	// The progress bar still shows every language.
+	if got := strings.Count(out, `class="progress-item"`); got != 30 {
+		t.Errorf("progress bar has %d segments, want 30", got)
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	if _, err := loadConfig(t.TempDir() + "/missing.json"); err != nil {
+		t.Errorf("missing file should not error, got %v", err)
+	}
+
+	path := t.TempDir() + "/config.json"
+	data := `{"excludeRepos": ["me/secret-repo"], "excludeLangs": ["HTML"], "excludeForks": true}`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fc, err := loadConfig(path)
+	if err != nil {
+		t.Fatalf("loadConfig: %v", err)
+	}
+	if !toSet(fc.ExcludeRepos, false)["me/secret-repo"] {
+		t.Error("excludeRepos not loaded")
+	}
+	if !toSet(fc.ExcludeLangs, true)["html"] {
+		t.Error("excludeLangs should be lowercased")
+	}
+	if !fc.ExcludeForks {
+		t.Error("excludeForks not loaded")
+	}
+
+	if err := os.WriteFile(path, []byte("not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadConfig(path); err == nil {
+		t.Error("malformed config should error")
 	}
 }
 
